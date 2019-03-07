@@ -1,0 +1,72 @@
+version: "3.7"
+
+services:
+  projects-service:
+    image: michaelkoconnor/jumpstart-projects-service
+    container_name: projects-service
+    build: ./jumpstart-projects
+    depends_on:
+      - db-projects
+    environment:
+      NODE_ENV: development
+    ports:
+      - 3000:3000
+    env_file: ./jumpstart-projects/.env
+
+  comments-service:
+    image: michaelkoconnor/jumpstart-comments-service
+    container_name: comments-service
+    build: ./jumpstart-comments
+    depends_on:
+      - db-projects
+    environment:
+      NODE_ENV: development
+    ports:
+      - 3001:3001
+    env_file: ./jumpstart-comments/.env
+
+  frontend:
+    image: michaelkoconnor/jumpstart-frontend
+    container_name: frontend
+    build: ./jumpstart-frontend
+    environment:
+      NODE_ENV: development
+    ports:
+      - 8080:8080
+
+  reverse-proxy:
+    image: michaelkoconnor/jumpstart-reverse-proxy
+    container_name: reverse-proxy
+    build: ./jumpstart-reverse-proxy
+    depends_on:
+      - projects-service
+      - comments-service
+      - frontend
+    ports:
+      - 80:80
+
+  db-projects:
+    image: postgres
+    container_name: db-projects
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: admin
+      POSTGRES_DB: jumpstartprojects
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./db-projects:/var/lib/postgresql/data
+
+  seed-db:
+    image: michaelkoconnor/jumpstart-projects-service
+    container_name: seed-db
+    build: ./jumpstart-projects
+    command: npm run knex-remake
+    depends_on:
+      - db-projects
+    environment:
+      NODE_ENV: development
+    ports:
+      - 4000:4000
+    env_file: ./jumpstart-projects/.env
