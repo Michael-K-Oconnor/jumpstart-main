@@ -16,6 +16,12 @@ proxy-up:
 frontend-build-up:
 	docker-compose up --build -d frontend
 
+comments-build-up:
+	docker-compose up --build comments-service
+
+projects-build-up:
+	docker-compose up --build projects-service
+
 build:
 	docker-compose build projects-service comments-service frontend reverse-proxy
 
