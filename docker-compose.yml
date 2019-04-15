@@ -4,11 +4,12 @@ services:
   projects-service:
     image: michaelkoconnor/jumpstart-projects-service
     container_name: projects-service
-    build: ./jumpstart-projects
+    build:
+      context: ./jumpstart-projects
+      args:
+        BUILD_ENV: development
     depends_on:
       - db-projects
-    environment:
-      NODE_ENV: development
     ports:
       - 3000:3000
     env_file: ./jumpstart-projects/.env
@@ -16,11 +17,12 @@ services:
   comments-service:
     image: michaelkoconnor/jumpstart-comments-service
     container_name: comments-service
-    build: ./jumpstart-comments
+    build:
+      context: ./jumpstart-comments
+      args:
+        BUILD_ENV: development
     depends_on:
       - db-projects
-    environment:
-      NODE_ENV: development
     ports:
       - 3001:3001
     env_file: ./jumpstart-comments/.env
@@ -28,11 +30,15 @@ services:
   frontend:
     image: michaelkoconnor/jumpstart-frontend
     container_name: frontend
-    build: ./jumpstart-frontend
-    environment:
-      NODE_ENV: development
+    build:
+      context: ./jumpstart-frontend
+      dockerfile: Dockerfile-dev
+      args:
+        BUILD_ENV: development
     ports:
       - 8080:8080
+    volumes:
+      - ./jumpstart-frontend/src/:/srv/src/
 
   reverse-proxy:
     image: michaelkoconnor/jumpstart-reverse-proxy
@@ -44,6 +50,27 @@ services:
       - frontend
     ports:
       - 80:80
+      - 443:443
+
+  lets-encrypt:
+    image: linuxserver/letsencrypt
+    container_name: lets-encrypt
+    ports:
+      - 443:443
+      - 80:80
+    volumes:
+      - ./letsencrypt:/config
+    depends_on:
+      - projects-service
+      - comments-service
+      - frontend
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - URL=ec2-18-234-245-254.compute-1.amazonaws.com
+      - SUBDOMAINS=www
+      - TZ=America/Chicago
+      - VALIDATION=http
 
   db-projects:
     image: postgres
